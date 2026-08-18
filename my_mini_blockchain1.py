@@ -46,3 +46,4 @@ def makeBlock(txns,chain):
     blockHash = hashme(blockContents)
     block = {u'hash':blockHash,u'contents':blockContents}
     return block
+blockSizeLimit = 5
