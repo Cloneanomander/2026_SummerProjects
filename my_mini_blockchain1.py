@@ -47,3 +47,16 @@ def makeBlock(txns,chain):
     block = {u'hash':blockHash,u'contents':blockContents}
     return block
 blockSizeLimit = 5
+
+while len(txnBuffer) > 0:
+    bufferStartSize = len(txnBuffer)
+    #Gather a set of valid transactions for inclusion
+    txnList = []
+    while (len(txnBuffer) > 0) and (len(txnList) < blockSizeLimit):
+        newTxn = txnBuffer.pop()
+        validTxn = isvalidTxn(newTxn,state)
+        #This will return False if txn is invalid
+        if validTxn:
+            txnList.append(newTxn)
+            state = updateState(newTxn,state)
+            
