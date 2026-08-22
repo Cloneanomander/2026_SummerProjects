@@ -59,4 +59,13 @@ while len(txnBuffer) > 0:
         if validTxn:
             txnList.append(newTxn)
             state = updateState(newTxn,state)
-            
+        else:
+            print("ignored transaction")
+            sys.stdout.flush()
+            continue
+        #Make a block
+        myBlock = makeBlock(txnList,chain)
+        chain.append(myBlock)
+
+    
+        
