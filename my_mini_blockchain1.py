@@ -67,5 +67,52 @@ while len(txnBuffer) > 0:
         myBlock = makeBlock(txnList,chain)
         chain.append(myBlock)
 
+def checkBlockHash(block):
+    #Raise an exception if the hash does not match the block contents
+    expectedHash = hashme(block['contents'])
+    if block['hash'] != expectedHash:
+        raise Exception('Hash does not match contents of block %s'%block['contents']['blockNumber'])
+    return
+
+def checkBlockValidity(block,parent,state):
+    #We want to check the following conditions:
+    #1.Each of the transactions are valid updates to the system state
+    #2.Block hash is valid for the block contents
+    #3.Block number increments the parent parent block number by 1
+    #Accuretly references the parent block's hash
+    parentNumber = parent['contents']['blockNumber']
+    parentHash = parent['hash']
+    blockNumber = block['contents']['blockNumber']
+    #Check transaction validity; throw an error if an invalid transaction was found
+    for txn in block['contents']['txns']:
+        if isvalidTxn(txn,state):
+            state = updateState(txn,state)
+        else:
+            raise Exception(f"Invalid transaction in block {blockNumber}:{txn}")
+    checkBlockHash(block)
+    if blockNumber != (parentNumber+1):
+        raise Exception(f"Hash does not match contents of block {blockNumber}")
+    if block['contents']['parentHash'] != parentHash:
+        raise Exception(f"Parent hash not accurate at block {blockNumber}")
+    return state
+
+def checkChain(chain):
+    #Work through the chain from the genesis block
+    #checking that all transactions are internally valid
+    # that the blocks are linked by their hashes
+    #This returns the state as a dictionary of accounts and balances,
+    # or returns False if an error was detected
+    if type(chain) == str:
+        try:
+            chain = json.loads(chain)
+            assert(type(chain) == list)
+        except:
+            return False
+    elif type(chain) != list:
+        return False
+    state = {}
+    #Prime the pump by checking the genesis block
+    
+    
     
         
