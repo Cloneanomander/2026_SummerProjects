@@ -1,31 +1,32 @@
-import hashlib,json,sys,random
+import hashlib,json,sys,random,copy
 def hashme(msg=""):
     if type(msg) != str:
         msg = json.dumps(msg,sort_keys=True)
     return hashlib.sha256(str(msg).encode('utf-8')).hexdigest()
-def makeTansaction(maxValue=3):
+def makeTransaction(maxValue=3):
     sign = int(random.getrandbits(1))*2
     amount = random.randint(1,maxValue)
     alicePays = sign * amount
     bobPays = -1 *alicePays
     return {u'Alice':alicePays,u'Bob':bobPays}
-txnBuffer = [makeTansaction() for _ in range(30)]
+txnBuffer = [makeTransaction() for _ in range(30)]
 def updateState(txn,state):
     state = state.copy()
     for key in txn:
         if key in state.keys():
             state[key] += txn[key]
-        state[key] = txn[key]
+        else:
+            state[key] = txn[key]
     return state
 def isvalidTxn(txn,state):
     if sum(txn.values()) != 0:
         return False
     for key in txn.keys():
         if key in state.keys():
-            acctBalance = state[key]
+            acctbalance = state[key]
         else:
             acctbalance = 0
-        if(acctBalance + txn[key]) < 0:
+        if(acctbalance + txn[key]) < 0:
             return False
     return True
 state = {u'Alice':5,u'Bob':5}
@@ -42,7 +43,7 @@ def makeBlock(txns,chain):
     parentHash = parentBlock[u'hash']
     blockNumber = parentBlock[u'contents'][u'blockNumber'] + 1
     txnCount = len(txns)
-    blockContents = {u'blockNumber':blockNumber,u'parentHash':parentHash,u'txnCount':len(txns),'txns':txns}
+    blockContents = {u'blockNumber':blockNumber,u'parentHash':parentHash,u'txnCount':len(txns),'txns':list(txns)}
     blockHash = hashme(blockContents)
     block = {u'hash':blockHash,u'contents':blockContents}
     return block
@@ -63,9 +64,9 @@ while len(txnBuffer) > 0:
             print("ignored transaction")
             sys.stdout.flush()
             continue
-        #Make a block
-        myBlock = makeBlock(txnList,chain)
-        chain.append(myBlock)
+    #Make a block
+    myBlock = makeBlock(txnList,chain)
+    chain.append(myBlock)
 
 def checkBlockHash(block):
     #Raise an exception if the hash does not match the block contents
@@ -112,7 +113,36 @@ def checkChain(chain):
         return False
     state = {}
     #Prime the pump by checking the genesis block
-    
+    for txn in chain[0]['contents']['txns']:
+        state = updateState(txn,state)
+    checkBlockHash(chain[0])
+    parent = chain[0]
+    #Checking subsequent blocks: These additionally need to check
+    # - the reference to the parent block's hash
+    # - the validity of the block number
+    for block in chain[1:]:
+        state = checkBlockValidity(block,parent,state)
+        parent = block
+    return state
+
+chainAsText = json.dumps(chain,sort_keys=True)
+checkChain(chainAsText)
+
+nodeBchain = copy.copy(chain)
+nodeBtxns = [makeTransaction() for i in range(5)]
+newBlock = makeBlock(nodeBtxns,nodeBchain)
+
+print(f"Blockchain on Node A is currently {len(chain)} long.")
+try:
+    print(f"New Block Received; checking validity...")
+    state = checkBlockValidity(newBlock,chain[-1],state)
+    chain.append(newBlock)
+except:
+    print(f"Invalid block; ignoring and waiting for the next block...")
+
+print(f"Blockchain on Node A is now {len(chain)}.")
+
+
     
     
         
